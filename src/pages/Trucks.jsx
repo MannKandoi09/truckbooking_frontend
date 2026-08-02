@@ -1,10 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from '../components/layout/Sidebar';
 import { Link } from 'react-router-dom';
+import { getAllTrucks, addTruck, updateTruck, deleteTruck, uploadTruckImage } from '../services/truckService';
 
 const Trucks = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('ADD'); // 'ADD' or 'EDIT'
+  const [trucksData, setTrucksData] = useState([]);
+  const [selectedTruckId, setSelectedTruckId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // 🚀 Form Data State (Backend ke liye) 🚀
   const [formData, setFormData] = useState({
@@ -23,14 +28,21 @@ const Trucks = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Fake Data (UI check karne ke liye)
-  const trucksData = [
-    { id: 1, number: 'GJ01AB1234', name: 'Tata Ace', type: 'Mini Truck', capacity: '10.00', model: '2024', insurance: '2027-12-31', status: 'ACTIVE', availability: 'AVAILABLE' },
-    { id: 2, number: 'MH12XY5678', name: 'Eicher Pro 2049', type: 'Medium Truck', capacity: '18.00', model: '2023', insurance: '2026-08-15', status: 'ACTIVE', availability: 'BOOKED' },
-    { id: 3, number: 'KA03CD9101', name: 'Tata 407', type: 'Medium Truck', capacity: '15.00', model: '2022', insurance: '2025-11-20', status: 'INACTIVE', availability: 'AVAILABLE' },
-    { id: 4, number: 'RJ14GH1122', name: 'BharatBenz 1214', type: 'Heavy Truck', capacity: '25.00', model: '2023', insurance: '2026-01-10', status: 'ACTIVE', availability: 'BOOKED' },
-    { id: 5, number: 'UP78JK3344', name: 'Ashok Leyland 2820', type: 'Container Truck', capacity: '30.00', model: '2024', insurance: '2026-03-05', status: 'ACTIVE', availability: 'AVAILABLE' },
-  ];
+  // Fetch data on load
+  useEffect(() => {
+    fetchTrucks();
+  }, []);
+
+  const fetchTrucks = async () => {
+    try {
+      const response = await getAllTrucks();
+      if (response.data.success) {
+        setTrucksData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching trucks:", error);
+    }
+  };
 
   // Jab user input fields mein kuch type kare
   const handleInputChange = (e) => {
@@ -55,21 +67,73 @@ const Trucks = () => {
   // Modal band karne ka function (sath mein fields aur image bhi clear karni padegi)
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setModalMode('ADD');
+    setSelectedTruckId(null);
     setImageFile(null);
     setImagePreview(null);
-    setFormData({ // Form reset kar diya
-      truckNumber: '', truckName: '', truckType: '', capacity: '', model: '', insurance: '', status: '', availability: ''
+    setFormData({ 
+      truckNumber: '', truckName: '', truckType: '', capacity: '', model: '', insurance: '', status: '', availability: '' 
     });
   };
 
-  // 🚀 Save Button Click (Backend API ke liye Ready) 🚀
-  const handleSaveTruck = () => {
-    // Yahan Backend developer API integrate karega
-    console.log("📝 Data ready for Backend:", formData);
-    console.log("📸 Image ready for Backend:", imageFile);
-    
-    alert("Task Completed! Check browser console (F12) to see the form data.");
-    handleCloseModal(); // Save hone ke baad modal close
+  // Edit Action Handler
+  const handleEdit = (truck) => {
+    setModalMode('EDIT');
+    setSelectedTruckId(truck.id);
+    setFormData({
+      truckNumber: truck.truckNumber || '',
+      truckName: truck.truckName || '',
+      truckType: truck.truckType || '',
+      capacity: truck.capacity || '',
+      model: truck.model || '',
+      insurance: truck.insurance || '',
+      status: truck.status || '',
+      availability: truck.availability || ''
+    });
+    setImagePreview(truck.image || null);
+    setIsModalOpen(true);
+  };
+
+  // Delete Action Handler
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this truck?")) {
+      try {
+        await deleteTruck(id);
+        fetchTrucks();
+      } catch (error) {
+        console.error("Error deleting truck:", error);
+      }
+    }
+  };
+
+  // 🚀 Save Button Click (Backend API Integration) 🚀
+  const handleSaveTruck = async () => {
+    setLoading(true);
+    try {
+      if (modalMode === 'EDIT') {
+        const response = await updateTruck(selectedTruckId, formData);
+        if (response.data.success && imageFile) {
+          await uploadTruckImage(selectedTruckId, imageFile);
+        }
+        alert("Truck Updated Successfully!");
+      } else {
+        const response = await addTruck(formData);
+        if (response.data.success) {
+          const newId = response.data.data.id;
+          if (imageFile) {
+            await uploadTruckImage(newId, imageFile);
+          }
+          alert("Truck Added Successfully!");
+        }
+      }
+      fetchTrucks();
+      handleCloseModal(); 
+    } catch (error) {
+      console.error("Error saving truck:", error);
+      alert("Failed to save truck!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -111,7 +175,7 @@ const Trucks = () => {
               <p className="text-sm text-slate-500 mt-1">Manage all trucks - add, view, edit, delete and upload truck images.</p>
             </div>
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => { setModalMode('ADD'); setIsModalOpen(true); }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-md shadow-blue-500/30 flex items-center gap-2"
             >
               <i className="fa-solid fa-plus"></i> Add Truck
@@ -120,26 +184,25 @@ const Trucks = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            {/* Stats div elements (hidden to save space, keeping yours exact) */}
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-xl"><i className="fa-solid fa-truck"></i></div>
-              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Total Trucks</p><h3 className="text-2xl font-bold text-slate-800">25</h3></div>
+              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Total Trucks</p><h3 className="text-2xl font-bold text-slate-800">{trucksData.length}</h3></div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 bg-green-50 text-green-500 rounded-full flex items-center justify-center text-xl"><i className="fa-regular fa-circle-check"></i></div>
-              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Active Trucks</p><h3 className="text-2xl font-bold text-slate-800">18</h3></div>
+              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Active Trucks</p><h3 className="text-2xl font-bold text-slate-800">{trucksData.filter(t => t.status === 'ACTIVE').length}</h3></div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-xl"><i className="fa-regular fa-circle-xmark"></i></div>
-              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Inactive Trucks</p><h3 className="text-2xl font-bold text-slate-800">7</h3></div>
+              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Inactive Trucks</p><h3 className="text-2xl font-bold text-slate-800">{trucksData.filter(t => t.status === 'INACTIVE').length}</h3></div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center text-xl"><i className="fa-regular fa-calendar"></i></div>
-              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Available Trucks</p><h3 className="text-2xl font-bold text-slate-800">14</h3></div>
+              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Available Trucks</p><h3 className="text-2xl font-bold text-slate-800">{trucksData.filter(t => t.availability === 'AVAILABLE').length}</h3></div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center text-xl"><i className="fa-regular fa-calendar-check"></i></div>
-              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Booked Trucks</p><h3 className="text-2xl font-bold text-slate-800">11</h3></div>
+              <div><p className="text-xs text-slate-500 font-semibold mb-0.5">Booked Trucks</p><h3 className="text-2xl font-bold text-slate-800">{trucksData.filter(t => t.availability === 'BOOKED').length}</h3></div>
             </div>
           </div>
 
@@ -211,12 +274,16 @@ const Trucks = () => {
                       <td className="px-6 py-3 font-medium text-slate-500">{idx + 1}</td>
                       <td className="px-6 py-3">
                         <div className="w-12 h-8 bg-slate-200 rounded flex items-center justify-center overflow-hidden">
-                          <i className="fa-solid fa-truck text-slate-400"></i>
+                          {truck.image ? (
+                            <img src={truck.image} alt="Truck" className="w-full h-full object-cover" />
+                          ) : (
+                            <i className="fa-solid fa-truck text-slate-400"></i>
+                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-3 font-bold text-slate-700">{truck.number}</td>
-                      <td className="px-6 py-3 text-slate-600">{truck.name}</td>
-                      <td className="px-6 py-3 text-slate-600">{truck.type}</td>
+                      <td className="px-6 py-3 font-bold text-slate-700">{truck.truckNumber}</td>
+                      <td className="px-6 py-3 text-slate-600">{truck.truckName}</td>
+                      <td className="px-6 py-3 text-slate-600">{truck.truckType}</td>
                       <td className="px-6 py-3 text-slate-600">{truck.capacity}</td>
                       <td className="px-6 py-3 text-slate-600">{truck.model}</td>
                       <td className="px-6 py-3 text-slate-600">{truck.insurance}</td>
@@ -237,9 +304,9 @@ const Trucks = () => {
                       <td className="px-6 py-3">
                         <div className="flex justify-center gap-2">
                           <button className="w-8 h-8 rounded border border-blue-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors"><i className="fa-regular fa-eye"></i></button>
-                          <button className="w-8 h-8 rounded border border-orange-200 text-orange-500 hover:bg-orange-50 flex items-center justify-center transition-colors"><i className="fa-solid fa-pencil"></i></button>
-                          <button className="w-8 h-8 rounded border border-cyan-200 text-cyan-600 hover:bg-cyan-50 flex items-center justify-center transition-colors"><i className="fa-solid fa-cloud-arrow-up"></i></button>
-                          <button className="w-8 h-8 rounded border border-red-200 text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"><i className="fa-regular fa-trash-can"></i></button>
+                          <button onClick={() => handleEdit(truck)} className="w-8 h-8 rounded border border-orange-200 text-orange-500 hover:bg-orange-50 flex items-center justify-center transition-colors"><i className="fa-solid fa-pencil"></i></button>
+                          <button onClick={() => { fileInputRef.current.click(); setSelectedTruckId(truck.id); }} className="w-8 h-8 rounded border border-cyan-200 text-cyan-600 hover:bg-cyan-50 flex items-center justify-center transition-colors"><i className="fa-solid fa-cloud-arrow-up"></i></button>
+                          <button onClick={() => handleDelete(truck.id)} className="w-8 h-8 rounded border border-red-200 text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"><i className="fa-regular fa-trash-can"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -250,15 +317,11 @@ const Trucks = () => {
 
             {/* Pagination Footer */}
             <div className="px-6 py-4 border-t border-slate-200 flex justify-between items-center">
-              <span className="text-sm text-slate-500">Showing 1 to 5 of 25 entries</span>
+              <span className="text-sm text-slate-500">Showing 1 to {trucksData.length} of {trucksData.length} entries</span>
               <div className="flex gap-2 items-center">
                 <div className="flex rounded border border-slate-200 overflow-hidden text-sm">
                   <button className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-500 border-r border-slate-200"><i className="fa-solid fa-chevron-left"></i></button>
                   <button className="px-3 py-1.5 bg-blue-600 text-white font-medium border-r border-slate-200">1</button>
-                  <button className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border-r border-slate-200">2</button>
-                  <button className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border-r border-slate-200">3</button>
-                  <button className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border-r border-slate-200">4</button>
-                  <button className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border-r border-slate-200">5</button>
                   <button className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-500"><i className="fa-solid fa-chevron-right"></i></button>
                 </div>
                 <select className="border border-slate-200 rounded px-2 py-1.5 text-sm text-slate-600 bg-white outline-none">
@@ -302,7 +365,7 @@ const Trucks = () => {
           >
             {/* Modal Header */}
             <div className="flex justify-between items-center px-8 py-5 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="font-extrabold text-xl text-slate-800">Add New Truck</h3>
+              <h3 className="font-extrabold text-xl text-slate-800">{modalMode === 'EDIT' ? 'Edit Truck' : 'Add New Truck'}</h3>
               <button 
                 onClick={handleCloseModal} 
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors"
@@ -349,7 +412,7 @@ const Trucks = () => {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-2">Capacity (Tons) <span className="text-red-500">*</span></label>
                   <input 
-                    type="text" name="capacity" value={formData.capacity} onChange={handleInputChange}
+                    type="number" step="0.01" name="capacity" value={formData.capacity} onChange={handleInputChange}
                     placeholder="e.g. 10.5" 
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" 
                   />
@@ -438,9 +501,10 @@ const Trucks = () => {
               </button>
               <button 
                 onClick={handleSaveTruck} 
+                disabled={loading}
                 className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/30 transition-all"
               >
-                Save Truck
+                {loading ? "Saving..." : "Save Truck"}
               </button>
             </div>
           </div>
@@ -450,7 +514,5 @@ const Trucks = () => {
     </div>
   );
 };
-
-
 
 export default Trucks;

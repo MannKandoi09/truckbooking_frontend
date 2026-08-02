@@ -1,23 +1,33 @@
-import api from './api'; // Tumhara created axios instance
+import api from './api';
 
-const API_URL = "/admin/trucks";
+// 1. Get All Trucks (GET /api/admin/trucks)
+export const getAllTrucks = () => {
+  return api.get('/admin/trucks');
+};
 
-export const getAllTrucks = () => api.get(API_URL);
+// 2. Add New Truck (POST /api/admin/trucks)
+export const addTruck = (truckData) => {
+  return api.post('/admin/trucks', truckData);
+};
 
-export const addTruck = (truckData) => api.post(API_URL, truckData);
+// 3. Update Truck (PUT /api/admin/trucks/{id})
+export const updateTruck = (id, truckData) => {
+  return api.put(`/admin/trucks/${id}`, truckData);
+};
 
-export const getTruckById = (id) => api.get(`${API_URL}/${id}`);
+// 4. Delete/Deactivate Truck (DELETE /api/admin/trucks/{id})
+export const deleteTruck = (id) => {
+  return api.delete(`/admin/trucks/${id}`);
+};
 
-export const updateTruck = (id, truckData) => api.put(`${API_URL}/${id}`, truckData);
+// 5. Upload Truck Image (POST /api/admin/trucks/{id}/upload-image)
+export const uploadTruckImage = (id, file) => {
+  const formData = new FormData();
+  formData.append('file', file); // 'file' wahi naam hai jo backend controller me @RequestParam("file") me hai
 
-export const deleteTruck = (id) => api.delete(`${API_URL}/${id}`);
-
-export const uploadTruckImage = (truckId, file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    // Yahan hum alag headers bhej rahe hain kyunki file upload mein multipart chahiye
-    return api.post(`${API_URL}/${truckId}/upload-image`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-    });
+  return api.post(`/admin/trucks/${id}/upload-image`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 };
