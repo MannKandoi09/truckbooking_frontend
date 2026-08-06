@@ -1,18 +1,25 @@
 import axios from 'axios';
 
-// Backend ka base URL
 const api = axios.create({
   baseURL: 'http://localhost:8080/api', 
 });
 
-// Request Interceptor: Ye har API call se pehle automatically Token attach kar dega
 api.interceptors.request.use(
   (config) => {
-    // LocalStorage se token nikalna (Ensure kar ki login ke baad tu token yahi save kar raha hai)
-    const token = localStorage.getItem('token'); 
+    let token = localStorage.getItem('token'); 
+    
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      // 🚀 TRICK: Agar token ke aage-peeche double quotes ("") hain, toh usko hata dega
+      token = token.replace(/['"]+/g, ''); 
+      
+      config.headers['Authorization'] = `Bearer ${token}`; 
+      
+      // Ye humein console me dikhayega ki token jaa raha hai ya nahi
+      console.log("➡️ Interceptor ne token bheja:", config.headers['Authorization']); 
+    } else {
+      console.log("❌ Interceptor ko token nahi mila!");
     }
+    
     return config;
   },
   (error) => {

@@ -90,7 +90,17 @@ const Trucks = () => {
       status: truck.status || '',
       availability: truck.availability || ''
     });
-    setImagePreview(truck.image || null);
+    
+    // 🚀 Edit me bhi image thik se dikhe uska logic 🚀
+    if (truck.image) {
+      const previewUrl = truck.image.startsWith('http') || truck.image.startsWith('data:image') 
+        ? truck.image 
+        : `data:image/jpeg;base64,${truck.image}`;
+      setImagePreview(previewUrl);
+    } else {
+      setImagePreview(null);
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -274,8 +284,15 @@ const Trucks = () => {
                       <td className="px-6 py-3 font-medium text-slate-500">{idx + 1}</td>
                       <td className="px-6 py-3">
                         <div className="w-12 h-8 bg-slate-200 rounded flex items-center justify-center overflow-hidden">
+                          {/* 🚀 Table list me image render ka naya logic 🚀 */}
                           {truck.image ? (
-                            <img src={truck.image} alt="Truck" className="w-full h-full object-cover" />
+                            <img 
+                              src={truck.image.startsWith('http') || truck.image.startsWith('data:image') 
+                                ? truck.image 
+                                : `data:image/jpeg;base64,${truck.image}`} 
+                              alt="Truck" 
+                              className="w-full h-full object-cover" 
+                            />
                           ) : (
                             <i className="fa-solid fa-truck text-slate-400"></i>
                           )}
