@@ -5,6 +5,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import UserDashboard from './pages/UserDashboard';   
 import Trucks from './pages/Trucks';
 import Drivers from './pages/Drivers'; // 🚀 Driver import add kar diya
+import CustomerManagement from './pages/CustomerManagement';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/user-dashboard" element={<UserDashboard />} />
         <Route path="/trucks" element={<Trucks />} />
         <Route path="/drivers" element={<Drivers />} /> {/* 🚀 Driver route add kar diya */}
+        <Route path="/customers" element={<CustomerManagement />} />
       </Routes>
     </div>
   );
