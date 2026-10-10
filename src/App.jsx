@@ -6,7 +6,8 @@ import UserDashboard from './pages/UserDashboard';
 import Trucks from './pages/Trucks';
 import Drivers from './pages/Drivers'; 
 import CustomerManagement from './pages/CustomerManagement';
-import BookingManagement from './pages/BookingManagement'; // 🚀 Booking import add kar diya
+import BookingManagement from './pages/BookingManagement'; 
+import RoutesManagement from './pages/RoutesManagement'; // 🚀 Routes import add kar diya
 
 function App() {
   return (
@@ -22,7 +23,8 @@ function App() {
         <Route path="/trucks" element={<Trucks />} />
         <Route path="/drivers" element={<Drivers />} /> 
         <Route path="/customers" element={<CustomerManagement />} />
-        <Route path="/bookings" element={<BookingManagement />} /> {/* 🚀 Booking route add kar diya */}
+        <Route path="/bookings" element={<BookingManagement />} /> 
+        <Route path="/routes" element={<RoutesManagement />} /> {/* 🚀 Routes route add kar diya */}
       </Routes>
     </div>
   );
