@@ -4,8 +4,9 @@ import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard'; 
 import UserDashboard from './pages/UserDashboard';   
 import Trucks from './pages/Trucks';
-import Drivers from './pages/Drivers'; // 🚀 Driver import add kar diya
+import Drivers from './pages/Drivers'; 
 import CustomerManagement from './pages/CustomerManagement';
+import BookingManagement from './pages/BookingManagement'; // 🚀 Booking import add kar diya
 
 function App() {
   return (
@@ -19,8 +20,9 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/user-dashboard" element={<UserDashboard />} />
         <Route path="/trucks" element={<Trucks />} />
-        <Route path="/drivers" element={<Drivers />} /> {/* 🚀 Driver route add kar diya */}
+        <Route path="/drivers" element={<Drivers />} /> 
         <Route path="/customers" element={<CustomerManagement />} />
+        <Route path="/bookings" element={<BookingManagement />} /> {/* 🚀 Booking route add kar diya */}
       </Routes>
     </div>
   );
