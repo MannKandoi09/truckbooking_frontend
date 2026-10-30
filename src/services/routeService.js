@@ -1,32 +1,31 @@
 import api from './api';
 
-// Saare routes fetch karna (GET)
+// Fetch all routes (GET)
 export const getAllRoutes = () => {
   return api.get('/admin/routes');
 };
 
-// Sirf active routes fetch karna Booking dropdown ke liye (GET)
+// Fetch only active routes for dropdowns (GET)
 export const getActiveRoutes = () => {
   return api.get('/admin/routes/active');
 };
 
-// Naya route create karna (POST)
+// Create new route (POST)
 export const createRoute = (routeData) => {
   return api.post('/admin/routes', routeData);
 };
 
-// Existing route update karna (PUT)
+// Update existing route (PUT)
 export const updateRoute = (id, routeData) => {
   return api.put(`/admin/routes/${id}`, routeData);
 };
 
-// Route ka status change karna (PATCH)
-// Note: Handoff kehta hai request body current controller se verify karein, hum standard JSON bhej rahe hain.
+// Change route status (PATCH with query param status)
 export const changeRouteStatus = (id, status) => {
-  return api.patch(`/admin/routes/${id}/status`, { status });
+  return api.patch(`/admin/routes/${id}/status?status=${status}`);
 };
 
-// Single route fetch karna
+// Fetch single route by ID
 export const getRouteById = (id) => {
   return api.get(`/admin/routes/${id}`);
 };
